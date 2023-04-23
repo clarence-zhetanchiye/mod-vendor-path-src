@@ -1,0 +1,7 @@
+%GOPATH% 下是src和pkg和bin三个目录。
+src是没有go.mod时代，存放项目目录的地方
+pkg/mod是go get 下载的第三方包放置的地方
+bin是go install 安装某第三方包后，形成的可.exe执行文件放置的地方（即go build main.go生成 .exe 文件）
+
+
+以上可以进入到go的开放包如go1.17查看，可以发现是类似的。

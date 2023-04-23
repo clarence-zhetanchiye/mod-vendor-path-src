@@ -1,0 +1,116 @@
+go mod 的一些在控制台进行输入的一些常用指令
+参考来源：
+https://www.liwenzhou.com/posts/Go/go_dependency/
+https://www.sohu.com/a/382894023_120575210
+https://blog.csdn.net/zzhongcy/article/details/97243826
+https://www.cnblogs.com/akidongzi/p/11772701.html
+	【注意，有了 go.mod后，项目可在任何地方而无需在$GOPATH/src下，但Goland需设置 Go Modules中 Enable Go modules integration打勾】
+
+
+
+=============================================================================================================
+go env 查看当前的诸如GO111MODULE是否开启的环境变量情况
+go env -w GOPROXY=https://goproxy.cn,direct  设置代理【即设置下载一些东西时默认网站（提示下载不了东西时一般是这个设置没弄），也可以为https://goproxy.io,direct】
+
+要启用go module支持首先要设置环境变量GO111MODULE  【直接设置系统环境变量（写入对应的.bash_profile文件亦可)】
+set GO111MODULE=on    打开go.mod模式，不再依赖gopath模式   
+set GO111MODULE=on    //windows系统种执行这样的命令
+export GO111MODULE=on //linux系统种执行这样的命令
+
+set GO111MODULE=off禁用模块支持，编译时会从GOPATH和vendor文件夹中查找包。
+set GO111MODULE=on启用模块支持，编译时会忽略GOPATH和vendor文件夹，只根据 go.mod去依赖已经下载的本地pkg中的第三方库。
+set GO111MODULE=auto，当项目在$GOPATH/src外且项目根目录有go.mod文件时，开启module依赖支持。
+
+=============================================================================================================
+
+go get xxxx 	下载依赖包xxx。---->> 下载的依赖包统一被放置到 $GOPATH/pkg/mod 当中。
+    	 运行go get -u xxx               将会升级到最新的次要版本或者修订版本(x.y.z, z是修订版本号， y是次要版本号)
+    	 运行go get -u=patch          将会升级到最新的修订版本
+    	 运行go get xxxx@version    将会下载指定版本号version【在工蜂的release或tag中看】或指定commit版本号【在工蜂的commits中看】的第三方包xxxx
+	 运行go get xxxx@'<v1.5.1'  将会下载指定范围内的版本的第三方包。
+
+go get 	      让goland发现、下载当前项目的依赖，升级项目中的所有依赖！！！
+
+go mod init  xxx    给当前项目xxx初始化一个go.mod文件并放置在xxx项目的一级目录 。【一般也可以不写xxx，直接在项目目录下的终端执行 go mod init】
+	注意！！！一个项目有且只有一个go.mod，一个go.mod文件即代表一个项目，项目中各子目录的依赖均在项目根目录下的go.mod中
+	
+
+	go.mod文件记录了项目所有的依赖信息，该文件中的单词module后面是本项目的名称，注意和github上的库名或工蜂代码仓库上的保持一致方便上传和拉取，
+		单词module后面的项目名称，即代表项目根目录文件夹名，故项目内某上层.go文件引用某下层.go文件时，import的路径以项目开头且不含本项目根目录文件夹名	
+		单词require括号内是依赖包及版本，单词indirect表示间接引用 ；单词replace后面是指定替换依赖包；exclude是指定忽略依赖包；
+	go.sum文件记录了当前所在项目代码的每个依赖库的版本和哈希值，以确保该项目的使用者在下载这些依赖时，下载到的依赖和当前的是一样的；
+
+go mod tidy   我们在代码中删除依赖代码后，相关的依赖库并不会在go.mod文件中自动移除。这种情况下我们可以使用
+                      该命令更新go.mod中的依赖关系。总之即多退少补，整理一些go.mod中的依赖，加上需要的依赖，去掉无用的依赖
+
+go mod download    一次性下载go.mod中全部依赖的相应版本的第三方包到本地的$GOPATH/pkg/mod/cache目录中。
+	      go mod download xxx@v0.1..    下载指定的go.mod
+
+-------------------------------------------------------------------------------------------
+以下举例一个go.mod文件内容，来进行说明：
+
+————————————————————————
+module github.com/eddycjy/module-repo
+
+go 1.13
+
+require (
+    example.com/apple v0.1.2
+    example.com/banana v1.2.3
+    example.com/banana/v2 v2.3.4
+    example.com/pear // indirect
+    example.com/strawberry // incompatible
+)
+
+exclude example.com/banana v1.2.4
+replace example.com/apple v0.1.2 => example.com/fried v0.1.0 
+replace example.com/banana => example.com/fish
+————————————————————————
+【说明】
+    module：用于定义当前项目的模块路径。
+    go：用于标识当前模块的 Go 语言版本，值为初始化模块时的版本，目前来看还只是个标识作用。
+    require：表示当前项目所依赖的所有第三方包。
+    exclude：用于从使用中排除一个特定的依赖的第三方包。可以自行手动添加。
+    replace：用于将一个依赖的第三方包替换为另外一个依赖的第三方包，可以自行手动添加。
+----------------------------------------------------------------------------------------------
+————————————————————————
+比如项目的go.mod中的目录名称为github.com/longjoy/micro-go-book ，而项目根目录 ch6-discovery下的目录结构为
+ch6-discovery
+├─config
+├─discover
+├─endpoint
+├─service
+└─transport
+
+则transport文件夹中的.go文件引用了下一层的endpoint文件夹中的.go文件中的函数，则transport文件夹中的.go文件的
+import为 github.com/longjoy/micro-go-book/endpoint  ， 而不是github.com/longjoy/micro-go-book/ch6-discovery/endpoint
+————————————————————————
+
+go mod edit        编辑go.mod文件   【直接在go.mod文件中手动修改更方便】
+	go mod edit -fmt     因为我们可以手动修改go.mod文件，所以有些时候需要格式化该文件
+	go mod edit -require=golang.org/x/text    添加依赖项【等号右边是举例】
+	go mod edit -droprequire=golang.org/x/text   go.mod中移除依赖项golang.org/x/text
+        关于go mod edit的更多用法可以通过go help mod edit查看
+go mod graph       打印模块依赖情况（每一行的格式为：包 包的一个依赖包   ）
+go mod verify        校验依赖
+go list -m all          查看所有依赖包
+
+
+==============================================================================================================
+go get github.com/tools/godep    安装godep   以使用vendor管理依赖的import包
+
+godep save     保存当前项目的所有第三方依赖的版本信息和代码
+godep go       使用保存的依赖项运行go工具
+godep get      下载并安装具有指定依赖项的包
+godep path     打印依赖的GOPATH路径
+godep restore  在GOPATH中拉取依赖的版本
+godep update   更新选定的包或go版本
+godep diff     显示当前和以前保存的依赖项集之间的差异
+godep version  查看版本信息
+
+在项目目录下执行godep save命令，会在当前项目中创建Godeps和vender两个文件夹
+其中Godeps文件夹下有一个Godeps.json的文件，里面记录了项目所依赖的包信息。 vender文件夹下是项目依赖的包的源代码文件。
+
+
+
+（完）

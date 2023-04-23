@@ -1,0 +1,10 @@
+【若要使用vendor，需先下载 go get -u -v github.com/kardianos/govendor】
+获取  go get github.com/kardianos/govendor
+
+在项目路径下的终端执行  go mod vendor   ，就会在项目中自动生成vendor文件夹，其内就是项目的所有依赖。
+go mod vendor        将当前项目的go.mod中的依赖 ($GOPATH/pkg/mod中的文件夹) 复制到自动创建的vendor目录下。
+		这样之后当前项目就无需依赖本地的 $GOPATH/src/pkg/mod中的第三方包，而是直接使用当前项目中的vendor目录下的内容。但go.mod不能删。
+
+
+go build -mod=vendor  main.go
+	             忽略当前项目所依赖的 $GOPATH/src/pkg/mod 中的第三方包，只使用当前项目依赖的已经复制到vendor文件夹中的依赖，进行项目的编译。
